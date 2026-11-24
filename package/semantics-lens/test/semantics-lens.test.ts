@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { 语义学透镜, 语义档案 } from '../src/index.js'
+import { 归纳多篇章语义分布, 提取篇章独特概念, 语义学透镜, 语义篇章 } from '../src/index.js'
 
 void test('语义学透镜应能提取核心概念、共现邻域与语义转折点', () => {
   let 透镜 = new 语义学透镜()
@@ -29,7 +29,7 @@ void test('语义学透镜应能提取核心概念、共现邻域与语义转折
   assert.ok(转折点列表.some((点) => 点.后单元原文.includes('冰美式')))
 })
 
-void test('语义档案应能计算跨篇章 TF-IDF 独特概念并支持快照恢复', () => {
+void test('应能通过无状态函数计算跨篇章 TF-IDF 独特概念与多篇章分布摘要并支持快照恢复', () => {
   let 透镜 = new 语义学透镜()
 
   let 篇章甲 = 透镜.同步剖析文章({
@@ -43,13 +43,17 @@ void test('语义档案应能计算跨篇章 TF-IDF 独特概念并支持快照�
 
   assert.ok(篇章甲.对比另一篇章(篇章乙) < 0.2)
 
-  let 档案 = 透镜.获得档案()
-  let 甲独特概念 = 档案.提取篇章独特概念(篇章甲.获得篇章标识(), 5)
+  let 篇章列表 = [篇章甲, 篇章乙]
+  let 甲独特概念 = 提取篇章独特概念(篇章甲, 篇章列表, 5)
   assert.ok(甲独特概念.some((项) => 项.词 === '心理学' || 项.词 === '人格' || 项.词 === '情绪'))
 
-  let 恢复档案 = 语义档案.从快照Json恢复(档案.导出快照Json())
-  assert.equal(恢复档案.获得篇章数量(), 2)
-  assert.equal(恢复档案.按条件检索({ 来源标签: '系统架构' }).length, 1)
+  let 分布摘要 = 归纳多篇章语义分布(篇章列表)
+  assert.equal(分布摘要.篇章总数, 2)
+  assert.ok(分布摘要.高频概念们.length > 0)
+
+  let 恢复篇章乙 = new 语义篇章(篇章乙.导出快照())
+  assert.equal(恢复篇章乙.获得来源标签(), '系统架构')
+  assert.equal(恢复篇章乙.获得单元数量(), 篇章乙.获得单元数量())
 })
 
 void test('语义学透镜应支持注入异步向量化函数计算余弦语义连贯度', async () => {

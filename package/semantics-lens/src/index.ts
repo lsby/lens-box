@@ -1,11 +1,10 @@
 import { 切分文章片段, 提取中文实词与总词数, 默认中文停用词集合 } from './lexical/text-tools.js'
-import { 语义档案 } from './model/archive.js'
 import { 概念共现图 } from './model/cooccurrence-graph.js'
 import { 语义篇章 } from './model/discourse.js'
 import { 语义单元 } from './model/unit.js'
 import { 语义剖析输入, 语义剖析输入Schema, 语义单元快照 } from './schema.js'
 
-export * from './model/archive.js'
+export * from './corpus-stats.js'
 export * from './model/cooccurrence-graph.js'
 export * from './model/discourse.js'
 export * from './model/unit.js'
@@ -25,7 +24,6 @@ export type 向量化函数 = (文本列表: string[]) => Promise<number[][]>
  * 构造语义学透镜所需的配置选项。
  */
 export type 语义学透镜配置 = {
-  初始档案?: 语义档案
   分词器?: 分词函数
   停用词集合?: ReadonlySet<string>
   共现窗口大小?: number
@@ -34,12 +32,11 @@ export type 语义学透镜配置 = {
 }
 
 /**
- * 语义学透镜是从分布语义学与篇章连贯度视角剖析文章的非大模型认知工具。
- * 里面组合了分词器、停用词表、共现窗口策略、可选的向量化通道以及一份语义档案。
- * 主要负责将原始文章切分并构建为充血的语义篇章对象，并自动沉淀进语义档案中。
+ * 语义学透镜是从分布语义学与篇章连贯度视角剖析文章的无状态非大模型认知工具。
+ * 里面组合了分词器、停用词表、共现窗口策略以及可选的向量化通道。
+ * 主要负责将原始文章切分并构建为充血的语义篇章对象。
  */
 export class 语义学透镜 {
-  private readonly 档案: 语义档案
   private readonly 自定义分词器: 分词函数 | undefined
   private readonly 停用词集合: ReadonlySet<string>
   private readonly 共现窗口大小: number
@@ -51,7 +48,6 @@ export class 语义学透镜 {
     if (共现窗口 < 2) {
       throw new Error('共现窗口大小至少为 2')
     }
-    this.档案 = 配置?.初始档案 ?? new 语义档案()
     this.自定义分词器 = 配置?.分词器
     this.停用词集合 = 配置?.停用词集合 ?? 默认中文停用词集合
     this.共现窗口大小 = 共现窗口
@@ -59,12 +55,8 @@ export class 语义学透镜 {
     this.向量化函数 = 配置?.向量化函数
   }
 
-  public 获得档案(): 语义档案 {
-    return this.档案
-  }
-
   /**
-   * 在不触发异步向量化的纯本地模式下，同步剖析文章并收录进档案。
+   * 在不触发异步向量化的纯本地模式下，同步剖析文章并返回语义篇章。
    */
   public 同步剖析文章(原始输入: 语义剖析输入): 语义篇章 {
     if (this.向量化函数 !== undefined) {
@@ -72,11 +64,11 @@ export class 语义学透镜 {
     }
     let 输入 = 语义剖析输入Schema.parse(原始输入)
     let { 单元列表 } = this.切分并分词(输入.文本, 输入.切分粒度 ?? this.默认切分粒度)
-    return this.构建并收录篇章(输入, 单元列表)
+    return this.构建篇章(输入, 单元列表)
   }
 
   /**
-   * 剖析文章并收录进语义档案；若配置了向量化函数则自动批量计算各语义单元的向量。
+   * 剖析文章并返回语义篇章；若配置了向量化函数则自动批量计算各语义单元的向量。
    */
   public async 剖析文章(原始输入: 语义剖析输入): Promise<语义篇章> {
     let 输入 = 语义剖析输入Schema.parse(原始输入)
@@ -98,7 +90,7 @@ export class 语义学透镜 {
       return new 语义单元({ ...草稿, 向量: 对应向量 })
     })
 
-    return this.构建并收录篇章(输入, 单元列表)
+    return this.构建篇章(输入, 单元列表)
   }
 
   private 切分并分词(
@@ -136,9 +128,9 @@ export class 语义学透镜 {
     return { 片段列表, 单元快照草稿, 单元列表 }
   }
 
-  private 构建并收录篇章(输入: 语义剖析输入, 单元列表: readonly 语义单元[]): 语义篇章 {
+  private 构建篇章(输入: 语义剖析输入, 单元列表: readonly 语义单元[]): 语义篇章 {
     let 共现图 = 概念共现图.从语义单元构建(单元列表, this.共现窗口大小)
-    let 篇章 = new 语义篇章({
+    return new 语义篇章({
       篇章标识: globalThis.crypto.randomUUID(),
       原文: 输入.文本,
       单元们: 单元列表.map((单元) => 单元.导出快照()),
@@ -146,8 +138,5 @@ export class 语义学透镜 {
       记录时间戳: Date.now(),
       来源标签: 输入.来源标签 ?? null,
     })
-
-    this.档案.收录(篇章)
-    return 篇章
   }
 }

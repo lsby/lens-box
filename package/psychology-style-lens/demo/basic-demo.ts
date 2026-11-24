@@ -25,7 +25,7 @@ async function 运行心理学观察演示(): Promise<void> {
     是否支持函数调用: 模型配置.是否支持函数调用,
   })
 
-  let 样本 = await 透镜.观察并收录({
+  let 样本 = await 透镜.观察({
     文本: '不会吧？这么简单的问题也要问我吗？记好了，我可不想解释第二遍～',
     上下文提示: '熟人之间带点小得意的教学对话',
     来源标签: '手动演示',
@@ -33,8 +33,6 @@ async function 运行心理学观察演示(): Promise<void> {
 
   console.log('=== 心理学剖析样本 ===')
   console.log(JSON.stringify(样本.导出快照(), null, 2))
-  console.log('\n=== 当前档案分布 ===')
-  console.log(透镜.获得档案().归纳画像分布())
 }
 
 void 运行心理学观察演示()

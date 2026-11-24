@@ -80,15 +80,4 @@ export type 心理学样本查询条件 = {
   社交距离?: 社交距离
   权力位阶?: 权力位阶
   来源标签?: string
-  最大数量?: number
-}
-
-/**
- * 档案中性格特质与对话场景的分布统计摘要。
- */
-export type 心理学画像分布摘要 = {
-  样本总数: number
-  高频性格特质: Array<{ 名称: string; 次数: number }>
-  社交距离分布: Record<string, number>
-  权力位阶分布: Record<string, number>
 }

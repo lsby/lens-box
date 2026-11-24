@@ -80,11 +80,6 @@ export let 语义篇章快照Schema = z.object({
 export type 语义篇章快照 = z.infer<typeof 语义篇章快照Schema>
 
 /**
- * 语义档案检索条件。
+ * 多篇章语义分布摘要。
  */
-export type 语义档案查询条件 = { 包含概念?: string; 来源标签?: string; 最大数量?: number }
-
-/**
- * 档案级语料库分布摘要。
- */
-export type 语义档案分布摘要 = { 篇章总数: number; 高频概念们: 概念权重[]; 平均相邻连贯度: number }
+export type 多篇章语义分布摘要 = { 篇章总数: number; 高频概念们: 概念权重[]; 平均相邻连贯度: number }
