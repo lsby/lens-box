@@ -1,0 +1,28 @@
+{
+  "name": "@lens-box/semantics-lens",
+  "version": "0.1.0",
+  "private": true,
+  "description": "基于分布语义学与概念共现网络的非大模型文章语义剖析透镜",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "demo": "tsx demo/basic-demo.ts",
+    "test": "node --import tsx --test test/*.test.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@node-rs/jieba": "^2.0.4",
+    "graphology": "^0.26.0",
+    "graphology-communities-louvain": "^2.0.2",
+    "stopwords-zh": "^0.4.0",
+    "zod": "^3.24.2"
+  }
+}
