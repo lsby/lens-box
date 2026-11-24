@@ -54,6 +54,15 @@ importers:
         specifier: ^8.52.0
         version: 8.73.0(eslint@9.39.5)(typescript@5.9.3)
 
+  package/language-form-lens:
+    dependencies:
+      '@node-rs/jieba':
+        specifier: ^2.0.4
+        version: 2.0.4
+      zod:
+        specifier: ^3.24.2
+        version: 3.25.76
+
   package/music-motif-lens:
     dependencies:
       zod:
