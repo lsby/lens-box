@@ -1,5 +1,5 @@
 {
-  "name": "lens-box",
+  "name": "@lsby/lens-box",
   "private": true,
   "description": "多视角认知算法库集合（Monorepo）",
   "type": "module",

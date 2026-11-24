@@ -1,4 +1,4 @@
-# @lens-box/psychology-style-lens
+# @lsby/lens-box-psychology-style-lens
 
 从**心理学视角**对文本例句进行文风建模的底层透镜库，采用本体驱动的充血对象建模设计。
 

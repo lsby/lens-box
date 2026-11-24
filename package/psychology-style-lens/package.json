@@ -1,5 +1,5 @@
 {
-  "name": "@lens-box/psychology-style-lens",
+  "name": "@lsby/lens-box-psychology-style-lens",
   "version": "0.1.0",
   "private": true,
   "description": "基于心理学视角分析文本人物性格与对话场景的文风建模透镜",

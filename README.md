@@ -110,7 +110,7 @@ pnpm build
 ## 六、 新增一个透镜
 
 1. 在 `package/` 下创建一个以英文小写短横线命名的新目录，例如 `package/psychology-character-lens/`。
-2. 参考现有透镜包（如 `package/psychology-style-lens/`）配置 `package.json`（包名建议使用 `@lens-box/<lens-name>`）和 `tsconfig.json`。
+2. 参考现有透镜包（如 `package/psychology-style-lens/`）配置 `package.json`（包名建议使用 `@lsby/lens-box-<lens-name>`）和 `tsconfig.json`。
 3. 遵循 [AGENTS.md](./AGENTS.md) 中的编码与类型约定编写透镜算法，尽量减少对外部基础设施的硬耦合，并在该包的 `README.md` 中清晰说明：
    - **观察视角**：该透镜关注什么维度的问题。
    - **核心领域概念**：该视角下抽象出的核心领域对象、模型结构及其各自承担的职责与能力。

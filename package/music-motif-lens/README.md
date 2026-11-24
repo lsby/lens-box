@@ -1,4 +1,4 @@
-# @lens-box/music-motif-lens
+# @lsby/lens-box-music-motif-lens
 
 基于**计算音乐学与符号序列分析**的非大模型音乐动机与变奏剖析透镜，采用本体驱动的充血对象建模设计。
 

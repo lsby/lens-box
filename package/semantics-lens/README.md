@@ -1,4 +1,4 @@
-# @lens-box/semantics-lens
+# @lsby/lens-box-semantics-lens
 
 基于**分布语义学与概念共现网络**的非大模型文章语义剖析透镜，采用本体驱动的充血对象建模设计。
 

@@ -1,5 +1,5 @@
 {
-  "name": "@lens-box/semantics-lens",
+  "name": "@lsby/lens-box-semantics-lens",
   "version": "0.1.0",
   "private": true,
   "description": "基于分布语义学与概念共现网络的非大模型文章语义剖析透镜",
