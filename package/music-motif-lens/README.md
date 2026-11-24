@@ -1,0 +1,48 @@
+# @lens-box/music-motif-lens
+
+基于**计算音乐学与符号序列分析**的非大模型音乐动机与变奏剖析透镜，采用本体驱动的充血对象建模设计。
+
+## 观察视角
+
+不依赖大语言模型或音频波形识别，直接从**十二平均律音名、按下/弹起时间与音轨**出发，回答三个结构主义音乐学问题：
+
+1. **旋律是如何断句成结构的？**（通过 LBDM 局部边界检测模型切分乐句，并基于自相似矩阵提取段落重复结构）
+2. **曲子的核心“音乐基因（动机）”是什么？**（通过音程、升降轮廓与时值比例编码结合显著性模式挖掘，提取反复发展的核心动机）
+3. **动机在轨内与轨间是如何变奏演化的？**（识别原样重复、严格移调、调内模进、倒影、逆行、节奏缩放以及加花/简缩变奏，并追踪跨音轨模仿关系）
+
+## 核心领域概念
+
+- **`音高`**：十二平均律音名（如 `C4`、`F#4`、`Bb3`）的精确半音表示，支持有向半音音程计算与移调变换。
+- **`音符`**：包含音高、按下时间与弹起时间的最小发声单元，内聚时长、IOI（起始时间间隔）、休止间隙与时间重叠判定。
+- **`乐句`**：音轨切分后的旋律片段单元，提取相对音程序列、Parsons 轮廓码、IOI 时值比例序列与级进/跳进形态特征。
+- **`动机`**：全曲或单轨中反复出现并驱动发展的核心序列基因，记录原型特征与出现位置并支持变奏判定。
+- **`变奏关系`**：连接原型与衍生片段的演化记录，标识变奏手法、变换参数（如移调半音数）与跨音轨归属。
+- **`音轨`**：单条独立声部线，组合有序 `音符[]`、切分后的 `乐句[]`、本轨核心 `动机[]` 与轨内 `变奏关系[]`，支持自相似结构标签与高潮点定位。
+- **`音乐作品`**：整首曲子的分析结果整体，组合多条 `音轨[]`、全曲核心 `动机[]` 与跨音轨 `变奏关系[]`，支持跨作品动机重合度对比。
+- **`音乐动机透镜`**：无状态的对外剖析入口，完成输入校验、可选重音主旋律抽取（Skyline）、LBDM 切分、动机挖掘与变奏图谱构建。
+
+## 适用边界
+
+- **擅长**：单声部旋律、多声部复调/对位作品、主题与变奏曲、儿歌/民谣/古典旋律的符号化动机挖掘、曲式重复结构与跨轨模仿分析。
+- **不擅长**：无音高打击乐轨道、非十二平均律微音高演奏、依赖纵向下层和弦色彩功能的和声学分析、未转译的原始音频文件。
+
+## 参考算法与论文资料
+
+本透镜的核心算法基于以下音乐信息检索（MIR）与计算音乐学经典文献实现：
+
+1. **乐句切分（LBDM）**
+   - Emilios Cambouropoulos (2001). _The Local Boundary Detection Model (LBDM) and its Application in the Study of Expressive Timing_. Proceedings of the International Computer Music Conference (ICMC).
+   - 依据音高音程变化、音符起始时间间隔（IOI）变化与休止长度计算局部边界强度，在局部峰值处切分乐句。
+2. **旋律轮廓编码（Parsons Code）**
+   - Denys Parsons (1975). _The Directory of Tunes and Musical Themes_. Spencer Brown.
+   - 将相邻音高走向编码为上行（`U`）、下行（`D`）、同音（`R`），实现移调与调内微调下的形态不变性比对。
+3. **重复模式与动机发现（SIA / 显著性模式挖掘）**
+   - David Meredith, Kjell Lemström & Geraint A. Wiggins (2002). _Algorithms for discovering repeated patterns in multidimensional representations of polyphonic music_. Journal of New Music Research, 31(4), 321-345.
+   - 借鉴二维“时间-音高”平移不变模式挖掘与 N-gram 显著性过滤思想，提取跨位置重复的核心动机种子。
+4. **变奏比对与加花对齐（Mongeau-Sankoff / Smith-Waterman & DTW）**
+   - Marcel Mongeau & David Sankoff (1990). _Comparison of musical sequences_. Computers and the Humanities, 24(3), 161-175.
+   - Temple F. Smith & Michael S. Waterman (1981). _Identification of common molecular subsequences_. Journal of Molecular Biology.
+   - 结合几何变换精确匹配（严格移调、倒影、逆行、等比节奏缩放）与带音程容差的局部序列比对，识别调内模进、加花与简缩变奏。
+5. **曲式自相似结构（Self-Similarity Matrix）**
+   - Jonathan Foote (1999). _Visualizing Music and Audio using Self-Similarity_. Proceedings of the ACM International Conference on Multimedia.
+   - 通过乐句两两综合相似度矩阵自动聚类并生成段落结构标签（如 `A-B-C-C-A-B`）。

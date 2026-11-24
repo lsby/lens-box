@@ -1,0 +1,23 @@
+{
+  "name": "@lens-box/music-motif-lens",
+  "version": "0.1.0",
+  "private": true,
+  "description": "基于计算音乐学与符号序列分析的非大模型音乐动机与变奏剖析透镜",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "demo": "tsx demo/twinkle-demo.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "zod": "^3.24.2"
+  }
+}
