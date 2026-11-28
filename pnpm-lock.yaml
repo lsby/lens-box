@@ -66,6 +66,12 @@ importers:
         specifier: ^3.24.2
         version: 3.25.76
 
+  package/expression-clumping-lens:
+    dependencies:
+      zod:
+        specifier: ^3.24.2
+        version: 3.25.76
+
   package/language-form-lens:
     dependencies:
       '@node-rs/jieba':
