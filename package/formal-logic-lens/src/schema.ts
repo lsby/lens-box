@@ -50,6 +50,15 @@ export let extractedPropositionSchema = z.object({
     .describe(
       'Formal-logic formula translating the statement, e.g. "∀x (人(x) → 会死(x))". Identifiers start with a letter; connectives ¬ ∧ ∨ → ↔; quantifiers ∀x / ∃x bind single lowercase Latin variables; every variable must be bound',
     ),
+  note: z
+    .string()
+    .trim()
+    .min(1)
+    .nullable()
+    .optional()
+    .describe(
+      'Optional translator note: alternative readings for ambiguous statements, modal-word simplifications (e.g. "可能" flattened into a predicate), or meta-level statements kept as 0-ary atoms. Omit when the translation is straightforward',
+    ),
 })
 
 export type ExtractedProposition = z.infer<typeof extractedPropositionSchema>
@@ -83,9 +92,17 @@ export let formalPropositionSnapshotSchema = z.object({
   content: z.string().min(1),
   evidence: evidenceAnchorSchema,
   formula: z.string().min(1),
+  // 旧版本快照没有 note 字段，恢复时自动补 null，保持向后兼容
+  note: z.string().min(1).nullable().default(null),
 })
 
 export type FormalPropositionSnapshot = z.infer<typeof formalPropositionSnapshotSchema>
+
+/**
+ * Accepted input form of a proposition snapshot: snapshots written before the `note` field
+ * existed (without that key) are still accepted and defaulted to `note: null`.
+ */
+export type FormalPropositionSnapshotInput = z.input<typeof formalPropositionSnapshotSchema>
 
 /**
  * Records which model and prompt version produced the extraction, for audit and reproducibility.
@@ -111,3 +128,9 @@ export let formalLogicDocumentSnapshotSchema = z.object({
 })
 
 export type FormalLogicDocumentSnapshot = z.infer<typeof formalLogicDocumentSnapshotSchema>
+
+/**
+ * Accepted input form of a document snapshot: propositions written before the `note` field
+ * existed (without that key) are still accepted and defaulted to `note: null`.
+ */
+export type FormalLogicDocumentSnapshotInput = z.input<typeof formalLogicDocumentSnapshotSchema>

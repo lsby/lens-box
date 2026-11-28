@@ -15,7 +15,7 @@ export * from './schema.js'
  * Version of the extraction prompt used by the lens. Bump it whenever the prompt changes in a
  * way that can alter extraction results, so stored documents remain auditable.
  */
-export let FORMAL_LOGIC_PROMPT_VERSION = 1
+export let FORMAL_LOGIC_PROMPT_VERSION = 2
 
 /**
  * Configuration for constructing a FormalLogicLens.
@@ -90,8 +90,15 @@ export class FormalLogicLens {
         '   - Quantifiers: ∀x and ∃x bind one variable and govern only the immediately following subformula; parenthesize the body when it is not a single atom.',
         '   - Formulas must be closed: every variable occurrence must be bound by a quantifier.',
         '5. Use the same predicate symbol with the same arity (number of arguments) throughout all formulas, and keep 0-ary atoms argument-free.',
-        '6. Keep proposition content concise and in the same language as the source text.',
+        '6. Keep proposition content concise, faithful to the wording of the source text, and in the same language as the source text.',
         '7. If the text asserts nothing, return an empty propositions array.',
+        'Translation conventions:',
+        '8. When a quantified statement ranges over a specific sort of objects (e.g. people), declare the domain explicitly with a guard atom in the body, e.g. "∀x (人(x) → 通过考核(x))", unless the statement clearly ranges over everything.',
+        '9. Translate exclusive disjunction ("要么 A，要么 B" / "either A or B, but not both") as "(A ∨ B) ∧ ¬(A ∧ B)"; reserve plain ∨ for inclusive disjunction.',
+        '10. For statements about a relation\'s property or about the statements themselves (e.g. "认识关系具有传递性", "上述命题不一致"), prefer an object-language rendering when the syntax allows it, e.g. "∀x∀y∀z ((认识(x, y) ∧ 认识(y, z)) → 认识(x, z))"; otherwise keep a 0-ary atom and explain in the note field.',
+        '11. Flatten modal words (可能, 必须, 禁止, ...) into plain predicates or 0-ary atoms, and say so in the note field, e.g. "「可能离职」按权宜处理为一元谓词，未表达模态".',
+        '12. For ambiguous statements (e.g. unclear scope of 除非/否则/也不), translate the most natural reading and describe the alternative reading in the note field.',
+        '13. Leave the note field out when the translation is straightforward.',
       ].join('\n'),
       最大校验重试次数,
       // 为校验失败重试预留充足循环轮次，同时避免无工具场景下的无效长循环

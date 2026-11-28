@@ -3,9 +3,11 @@ import test from 'node:test'
 import OpenAI from 'openai'
 import {
   buildFormalLogicDocument,
+  collectConstants,
   ExtractedProposition,
   findFreeVariables,
   FormalLogicDocument,
+  FormalLogicDocumentSnapshotInput,
   FormalLogicExtractionResult,
   formalLogicExtractionResultSchema,
   FormalLogicLens,
@@ -122,13 +124,21 @@ void test('findFreeVariables 应识别自由变量并允许常量与量词遮蔽
   assert.deepEqual(findFreeVariables(parseFormula('∀x P(x) → Q(x)')), ['x'])
 })
 
-void test('formatFormula 应按优先级最小化括号且与 parseFormula 往返一致', () => {
-  assert.equal(formatFormula(parseFormula('(P ∧ Q) → R')), 'P ∧ Q → R')
-  assert.equal(formatFormula(parseFormula('P → (Q → R)')), 'P → Q → R')
-  assert.equal(formatFormula(parseFormula('(P → Q) → R')), '(P → Q) → R')
+void test('formatFormula 应以完整括号规范化渲染且与 parseFormula 往返一致', () => {
+  assert.equal(formatFormula(parseFormula('(P ∧ Q) → R')), '((P ∧ Q) → R)')
+  assert.equal(formatFormula(parseFormula('P → (Q → R)')), '(P → (Q → R))')
+  assert.equal(formatFormula(parseFormula('(P → Q) → R')), '((P → Q) → R)')
   assert.equal(formatFormula(parseFormula('¬(P ∧ Q)')), '¬(P ∧ Q)')
-  assert.equal(formatFormula(parseFormula('P <-> Q')), 'P ↔ Q')
+  assert.equal(formatFormula(parseFormula('P <-> Q')), '(P ↔ Q)')
   assert.equal(formatFormula(parseFormula('∀x (人(x) → 会死(x))')), '∀x (人(x) → 会死(x))')
+  assert.equal(formatFormula(parseFormula('P ∧ Q ∨ R')), '((P ∧ Q) ∨ R)')
+  assert.equal(formatFormula(parseFormula('¬∀x P(x)')), '¬∀x P(x)')
+
+  // 链式蕴含必须带完整括号，避免读者误读结合方向
+  assert.equal(
+    formatFormula(parseFormula('((¬去(小王) → (去(小张) → 去(小李))) ∧ (去(小张) ∧ ¬去(小李))) → 去(小王)')),
+    '(((¬去(小王) → (去(小张) → 去(小李))) ∧ (去(小张) ∧ ¬去(小李))) → 去(小王))',
+  )
 
   let 样例列表 = [
     'P',
@@ -143,6 +153,16 @@ void test('formatFormula 应按优先级最小化括号且与 parseFormula 往�
     let 语法树 = parseFormula(源码)
     assert.deepEqual(parseFormula(formatFormula(语法树)), 语法树)
   }
+})
+
+void test('collectConstants 应只收集项位置中的常量', () => {
+  assert.deepEqual([...collectConstants(parseFormula('人(苏格拉底)'))].sort(), ['苏格拉底'])
+  assert.deepEqual([...collectConstants(parseFormula('喜欢(张三, 李四)'))].sort(), ['张三', '李四'])
+  assert.deepEqual([...collectConstants(parseFormula('∀x (认识(x, 甲) ∧ 认识(乙, x))'))].sort(), ['乙', '甲'])
+  // 变量与谓词名不计入常量
+  assert.deepEqual([...collectConstants(parseFormula('P'))], [])
+  assert.deepEqual([...collectConstants(parseFormula('∀x P(x)'))], [])
+  assert.deepEqual([...collectConstants(parseFormula('∃x (P(x) ∧ Q(y))'))], [])
 })
 
 void test('提取结果 Schema 应在结构化校验阶段拒绝非法公式', () => {
@@ -224,10 +244,63 @@ void test('buildFormalLogicDocument 应能从固定提取结果离线构建可�
   assert.equal(篇章.getPropositionById(第一条.getId())?.getContent(), '明天下雨就不去爬山')
   assert.equal(篇章.getPropositionById('不存在的标识'), undefined)
 
+  // 常量表：示例提取结果中只有 人(张三) 引入了常量
+  assert.deepEqual(篇章.listConstants(), ['张三'])
+
   // getPropositions 返回拷贝，外部修改不影响内部状态
   let 外部列表 = 篇章.getPropositions()
   外部列表.pop()
   assert.equal(篇章.getPropositions().length, 3)
+})
+
+void test('note 字段应能透传、缺省为 null 且兼容不含 note 的旧快照', () => {
+  let 篇章 = buildFormalLogicDocument({
+    text: '除非你道歉，否则我不原谅你，也不合作。',
+    extraction: {
+      propositions: [
+        {
+          key: 'p1',
+          content: '除非你道歉，否则我不原谅你，也不合作',
+          evidence: { quote: '除非你道歉，否则我不原谅你，也不合作。', occurrence: 1 },
+          formula: '¬道歉(你) → (¬原谅(我, 你) ∧ ¬合作(我, 你))',
+          note: '按读法一翻译：不原谅与不合作都受「除非道歉」约束；备选读法为 (¬道歉(你) → ¬原谅(我, 你)) ∧ ¬合作(我, 你)',
+        },
+        { key: 'p2', content: '我不合作', evidence: { quote: '也不合作', occurrence: 1 }, formula: '¬合作(我, 你)' },
+      ],
+    },
+    model: 'offline-fixture',
+    promptVersion: 2,
+  })
+
+  let 命题列表 = 篇章.getPropositions()
+  let 带备注 = 命题列表[0]
+  let 无备注 = 命题列表[1]
+  if (带备注 === undefined || 无备注 === undefined) {
+    throw new Error('构建结果缺少命题')
+  }
+  assert.equal(带备注.getNote()?.includes('备选读法'), true)
+  assert.equal(无备注.getNote(), null)
+  assert.deepEqual(篇章.listConstants().sort(), ['你', '我'])
+
+  // 快照往返保留 note
+  let 快照 = 篇章.toSnapshot()
+  assert.equal(new FormalLogicDocument(快照).getPropositions()[0]?.getNote(), 带备注.getNote())
+
+  // 不含 note 字段的旧版本快照仍可恢复，自动补 null
+  let 旧式快照: FormalLogicDocumentSnapshotInput = {
+    snapshotVersion: 1,
+    id: 'doc-旧版',
+    text: '张三是人。',
+    propositions: [
+      { id: 'p-1', content: '张三是人', evidence: { quote: '张三是人。', start: 0, end: 5 }, formula: '人(张三)' },
+    ],
+    sourceLabel: null,
+    recordedAt: 0,
+    provenance: { model: 'offline-fixture', promptVersion: 1 },
+  }
+  let 恢复篇章 = new FormalLogicDocument(旧式快照)
+  assert.equal(恢复篇章.getPropositions()[0]?.getNote(), null)
+  assert.equal(恢复篇章.toSnapshot().propositions[0]?.note, null)
 })
 
 void test('buildFormalLogicDocument 应能处理空提取结果与重复出现的摘录', () => {

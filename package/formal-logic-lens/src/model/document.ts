@@ -1,4 +1,9 @@
-import { ExtractionProvenance, FormalLogicDocumentSnapshot, formalLogicDocumentSnapshotSchema } from '../schema.js'
+import {
+  ExtractionProvenance,
+  FormalLogicDocumentSnapshot,
+  FormalLogicDocumentSnapshotInput,
+  formalLogicDocumentSnapshotSchema,
+} from '../schema.js'
 import { FormalProposition } from './proposition.js'
 
 /**
@@ -24,11 +29,12 @@ export class FormalLogicDocument {
   private readonly 原文: string
   private readonly 命题列表: FormalProposition[]
   private readonly 谓词元数表: Map<string, number>
+  private readonly 常量集合: Set<string>
   private readonly 来源标签: string | null
   private readonly 记录时间: number
   private readonly 提取来源: ExtractionProvenance
 
-  public constructor(snapshot: FormalLogicDocumentSnapshot) {
+  public constructor(snapshot: FormalLogicDocumentSnapshotInput) {
     let 校验值 = formalLogicDocumentSnapshotSchema.parse(snapshot)
 
     for (let 命题 of 校验值.propositions) {
@@ -52,6 +58,7 @@ export class FormalLogicDocument {
     }
 
     let 谓词元数表 = new Map<string, number>()
+    let 常量集合 = new Set<string>()
     for (let 命题 of 命题列表) {
       for (let [符号, 元数] of 命题.getPredicateArities()) {
         let 已有元数 = 谓词元数表.get(符号)
@@ -62,12 +69,16 @@ export class FormalLogicDocument {
         }
         谓词元数表.set(符号, 元数)
       }
+      for (let 常量 of 命题.getConstants()) {
+        常量集合.add(常量)
+      }
     }
 
     this.篇章标识 = 校验值.id
     this.原文 = 校验值.text
     this.命题列表 = 命题列表
     this.谓词元数表 = 谓词元数表
+    this.常量集合 = 常量集合
     this.来源标签 = 校验值.sourceLabel
     this.记录时间 = 校验值.recordedAt
     this.提取来源 = { ...校验值.provenance }
@@ -96,6 +107,13 @@ export class FormalLogicDocument {
     return [...this.谓词元数表.entries()]
       .map(([符号, 元数]) => ({ symbol: 符号, arity: 元数 }))
       .sort((甲, 乙) => 甲.symbol.localeCompare(乙.symbol))
+  }
+
+  /**
+   * Lists every constant appearing in term positions across the document, sorted.
+   */
+  public listConstants(): string[] {
+    return [...this.常量集合].sort()
   }
 
   public getSourceLabel(): string | null {

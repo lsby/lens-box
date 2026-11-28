@@ -1,6 +1,11 @@
-import { collectPredicateArities, findFreeVariables, FormulaNode } from '../formula/ast.js'
+import { collectConstants, collectPredicateArities, findFreeVariables, FormulaNode } from '../formula/ast.js'
 import { parseFormula } from '../formula/parser.js'
-import { EvidenceAnchor, FormalPropositionSnapshot, formalPropositionSnapshotSchema } from '../schema.js'
+import {
+  EvidenceAnchor,
+  FormalPropositionSnapshot,
+  FormalPropositionSnapshotInput,
+  formalPropositionSnapshotSchema,
+} from '../schema.js'
 
 /**
  * A FormalProposition is a single statement explicitly asserted in a text, translated into a
@@ -17,8 +22,9 @@ export class FormalProposition {
   private readonly 原文依据: EvidenceAnchor
   private readonly 公式源码: string
   private readonly 公式语法树: FormulaNode
+  private readonly 翻译备注: string | null
 
-  public constructor(snapshot: FormalPropositionSnapshot) {
+  public constructor(snapshot: FormalPropositionSnapshotInput) {
     let 校验值 = formalPropositionSnapshotSchema.parse(snapshot)
     let 语法树 = parseFormula(校验值.formula)
     let 自由变量 = findFreeVariables(语法树)
@@ -30,6 +36,7 @@ export class FormalProposition {
     this.原文依据 = { ...校验值.evidence }
     this.公式源码 = 校验值.formula
     this.公式语法树 = 语法树
+    this.翻译备注 = 校验值.note
   }
 
   public getId(): string {
@@ -38,6 +45,14 @@ export class FormalProposition {
 
   public getContent(): string {
     return this.命题内容
+  }
+
+  /**
+   * Returns the translator note (alternative readings, modal-word simplifications, meta-level
+   * handling), or null when the translation is straightforward.
+   */
+  public getNote(): string | null {
+    return this.翻译备注
   }
 
   public getEvidence(): EvidenceAnchor {
@@ -65,6 +80,14 @@ export class FormalProposition {
   }
 
   /**
+   * Returns the constants appearing in term positions of this proposition's formula.
+   * The set is rebuilt on every call.
+   */
+  public getConstants(): Set<string> {
+    return collectConstants(this.公式语法树)
+  }
+
+  /**
    * Case-insensitive substring match against the proposition content and formula source.
    * A blank keyword matches every proposition.
    */
@@ -77,6 +100,12 @@ export class FormalProposition {
   }
 
   public toSnapshot(): FormalPropositionSnapshot {
-    return { id: this.命题标识, content: this.命题内容, evidence: { ...this.原文依据 }, formula: this.公式源码 }
+    return {
+      id: this.命题标识,
+      content: this.命题内容,
+      evidence: { ...this.原文依据 },
+      formula: this.公式源码,
+      note: this.翻译备注,
+    }
   }
 }

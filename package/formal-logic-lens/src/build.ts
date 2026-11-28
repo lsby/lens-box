@@ -53,6 +53,7 @@ export function buildFormalLogicDocument(params: BuildFormalLogicDocumentParams)
       content: 命题.content,
       evidence: { quote: 命题.evidence.quote, start: 起始, end: 起始 + 命题.evidence.quote.length },
       formula: 命题.formula,
+      note: 命题.note ?? null,
     })
   }
 

@@ -8,6 +8,9 @@
  * - 量词 `∀x` / `∃x` 与 `¬` 同级，仅约束紧随其后的子公式；
  * - 闭公式约束：变量出现必须被量词绑定，常量无需绑定。
  *
+ * 渲染约定：`formatFormula` 输出**完整括号**的规范化字符串（二元联结词一律 `(L op R)`），
+ * 不依赖优先级约定即可无歧义阅读；渲染结果重新解析后与原 AST 结构一致。
+ *
  * 本模块只做公式结构的表示与局部校验，不做矛盾检测、真值表求值或推理有效性分析——
  * 此类进一步推断交由上层调用方（如 LLM）按需自行处理。
  */
@@ -46,62 +49,27 @@ export function 是合法变量名(标识符: string): boolean {
   return /^[a-z]$/.test(标识符)
 }
 
-function 获得优先级(节点: FormulaNode): number {
-  switch (节点.kind) {
-    case 'atom':
-      return 5
-    case 'not':
-    case 'forall':
-    case 'exists':
-      return 4
-    case 'and':
-      return 3
-    case 'or':
-      return 2
-    case 'implies':
-      return 1
-    case 'iff':
-      return 0
-  }
-}
-
-function 渲染子式(子式: FormulaNode, 需要括号: boolean): string {
-  let 文本 = 渲染公式(子式)
-  return 需要括号 ? `(${文本})` : 文本
-}
-
 function 渲染公式(节点: FormulaNode): string {
   switch (节点.kind) {
     case 'atom':
       return 节点.args.length === 0 ? 节点.predicate : `${节点.predicate}(${节点.args.join(', ')})`
     case 'not':
-      return `¬${渲染子式(节点.operand, 获得优先级(节点.operand) < 4)}`
+      return `¬${渲染公式(节点.operand)}`
     case 'forall':
-      return `∀${节点.variable} ${渲染子式(节点.body, 获得优先级(节点.body) < 4)}`
+      return `∀${节点.variable} ${渲染公式(节点.body)}`
     case 'exists':
-      return `∃${节点.variable} ${渲染子式(节点.body, 获得优先级(节点.body) < 4)}`
+      return `∃${节点.variable} ${渲染公式(节点.body)}`
     case 'and':
-    case 'or': {
-      // 左结合：右侧同优先级子式必须加括号才能保持原结构
-      let 优先级 = 获得优先级(节点)
-      let 左 = 渲染子式(节点.left, 获得优先级(节点.left) < 优先级)
-      let 右 = 渲染子式(节点.right, 获得优先级(节点.right) <= 优先级)
-      return `${左} ${联结词符号表[节点.kind]} ${右}`
-    }
+    case 'or':
     case 'implies':
-    case 'iff': {
-      // 右结合：左侧同优先级子式必须加括号才能保持原结构
-      let 优先级 = 获得优先级(节点)
-      let 左 = 渲染子式(节点.left, 获得优先级(节点.left) <= 优先级)
-      let 右 = 渲染子式(节点.right, 获得优先级(节点.right) < 优先级)
-      return `${左} ${联结词符号表[节点.kind]} ${右}`
-    }
+    case 'iff':
+      return `(${渲染公式(节点.left)} ${联结词符号表[节点.kind]} ${渲染公式(节点.right)})`
   }
 }
 
 /**
- * 将公式 AST 渲染为规范化的公式字符串（按优先级最小化括号）。
- * 渲染结果重新经 `parseFormula` 解析后与原 AST 结构一致。
+ * 将公式 AST 渲染为规范化的公式字符串。二元联结词一律以完整括号 `(L op R)` 呈现，
+ * 不依赖优先级约定即可无歧义阅读；渲染结果重新经 `parseFormula` 解析后与原 AST 结构一致。
  */
 export function formatFormula(节点: FormulaNode): string {
   return 渲染公式(节点)
@@ -183,4 +151,40 @@ export function collectPredicateArities(节点: FormulaNode): Map<string, number
   let 元数表 = new Map<string, number>()
   收集谓词元数(节点, 元数表)
   return 元数表
+}
+
+function 收集常量(节点: FormulaNode, 常量: Set<string>): void {
+  switch (节点.kind) {
+    case 'atom':
+      for (let 项 of 节点.args) {
+        if (是合法变量名(项) === false) {
+          常量.add(项)
+        }
+      }
+      return
+    case 'not':
+      收集常量(节点.operand, 常量)
+      return
+    case 'and':
+    case 'or':
+    case 'implies':
+    case 'iff':
+      收集常量(节点.left, 常量)
+      收集常量(节点.right, 常量)
+      return
+    case 'forall':
+    case 'exists':
+      收集常量(节点.body, 常量)
+      return
+  }
+}
+
+/**
+ * 收集公式项位置中出现的全部常量（非变量的标识符），返回去重集合。
+ * 变量（单个小写拉丁字母）由量词绑定机制处理，不会进入常量集合。
+ */
+export function collectConstants(节点: FormulaNode): Set<string> {
+  let 常量 = new Set<string>()
+  收集常量(节点, 常量)
+  return 常量
 }
