@@ -29,9 +29,9 @@
 
 ## 复现
 
-以上正文由确定性的合成生成器直接构造，可以公开逐行核算。[两组夜聊全文](./demo/synthetic-corpus.ts) · [可执行断言](./test/clumping.test.ts)
+以上两组定量校验材料已内联于测试文件中，可以公开逐行核算。[测试材料与可执行断言](./test/clumping.test.ts) · [中文演示语料](./demo/synthetic-corpus.ts) · [演示脚本](./demo/basic-demo.ts)
 
-在 lens-box 根目录运行。验证环境为 Node.js 26.3.0、pnpm 9.5.0，上游版本 `dbee564`。
+在 lens-box 根目录运行：
 
 ```sh
 pnpm install --frozen-lockfile
@@ -40,7 +40,7 @@ pnpm --filter @lsby/lens-box-expression-clumping-lens demo
 pnpm check
 ```
 
-本轮运行通过 10/10 项测试。工作区的格式检查、ESLint、类型检查及全量构建均通过。十项测试覆盖同频表达的手算值、负分、逐篇计数、缺少参照、上下档等距、上中位数、Unicode 重叠与边界、固定种子复算及非法输入。`demo` 逐行输出这两张表对应的完整 JSON。
+单元测试通过 10/10 项测试，覆盖同频表达的手算值、负分、逐篇计数、缺少参照、上下档等距、上中位数、Unicode 重叠与边界、固定种子复算及非法输入。`demo` 使用“日常日记”与“群聊记录”两套纯中文合成语料，输出集中成团、分散出现及语料范围变化后的完整 JSON 结果。
 
 ## 原应用的公开汇总
 
